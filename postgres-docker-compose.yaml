@@ -1,0 +1,57 @@
+version: "3.8"
+# Optional Jupyter Notebook service
+services:
+  jupyter_notebook:
+    image: "jupyter/minimal-notebook"
+    container_name: jupyter_notebook
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    ports:
+      - "8888:8888"
+    volumes:
+      - /home/mmphego/tmp/dataeng:/home/jovyan/work
+    depends_on:
+      - database
+    links:
+      - database
+    networks:
+      - etl_network
+
+  database:
+    image: "postgres:11"
+    container_name: database
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: "winequality"
+      POSTGRES_HOST: "database"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "postgres"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-U",
+          "postgres",
+          "-d",
+          "winequality"
+        ]
+      interval: 5s
+      retries: 5
+    restart: always
+    volumes:
+      - /tmp/pg-data/:/var/lib/postgresql/data/
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - etl_network
+
+volumes:
+  dbdata: null
+
+# Create custom network for bridging the containers
+networks:
+  etl_network: null
